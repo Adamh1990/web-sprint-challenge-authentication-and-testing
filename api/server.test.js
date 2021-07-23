@@ -2,7 +2,10 @@
 const request = require('supertest')
 const server = require('./server')
 const db = require('../data/dbConfig')
+const bcrypt = require('bcryptjs')
+const jwtDecode = require('jwt-decode')
 const Jokes = require('./jokes/jokes-model')
+
 test('sanity', () => {
   expect(true).not.toBe(false)
 })
@@ -20,15 +23,15 @@ describe("jokes-model", () => {
 		it("should add a user", async () => {
 			// make request, send data
 			await Jokes.add({
-				username: "addTestUsername",
-				password: "addTestPassword",
+				username: "Captain Marvel",
+				password: "foobar",
 			});
 
 			// check that the new user is in the database(without using GET or route)
 			const addTestUsersPresent = await db("users");
 
 			expect(addTestUsersPresent).toHaveLength(1);
-			expect(addTestUsersPresent[0].username).toMatch("addTestUsername");
+			expect(addTestUsersPresent[0].username).toMatch("Captain Marvel");
 		});
 	}); // PASSING
 
@@ -105,3 +108,56 @@ describe("auth router", () => {
     }, 500);
 		});
 	}); // PASSING
+
+
+//==============================================================//
+
+describe("jokes-router", () => {
+	// truncate users table
+	beforeEach(async () => {
+		// empty users table and reset PK to 1
+		await db("users").truncate();
+		const trunkTest = await db("users");
+		expect(trunkTest).toHaveLength(0);
+	});
+
+	// testing the GET endpoint
+
+	describe("GET /", () => {
+		it("should return an array of dad jokes", async () => {
+			// step 1 check that users has been truncated
+			const getTestUsersPresent1 = await db("users");
+			expect(getTestUsersPresent1).toHaveLength(0);
+
+			// step 2 add a user
+			await request(server).post("/api/auth/register").send({
+				username: "Captain Marvel",
+				password: "foobar",
+			});
+			const testtest = await db("users");
+			expect(testtest).toHaveLength(1);
+
+			// step 3 login a user
+			let res = await request(server).post("/api/auth/login").send({
+				username: "Captain Marvel",
+				password: "foobar",
+			});
+			let token = res.body.token;
+			let result = await request(server).get("/api/jokes").set({ Authorization: token });
+
+			// step 6 examine the result of the get request
+			console.log("DAD JOKES", result.body);
+			await db("users").truncate();
+		});
+	});
+});
+
+describe('jokes router', () => {
+  describe('get jokes endpoint', () => {
+    it('gives a 200 status', async () => {
+      await request(server).get('/api/jokes').then(res => {
+        expect(res.status).toBe(401)
+      })
+    })
+  })
+})
