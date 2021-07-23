@@ -89,25 +89,19 @@ describe("auth router", () => {
 
 			// step 2 add a new user to the db and check existance
 			await request(server).post("/api/auth/register").send({
-				username: "loginTestUsername",
-				password: "loginTestPassword",
+				username: "Captain Marvel",
+				password: "foobar",
 			});
 			const LoginTest2 = await db("users");
 			expect(LoginTest2).toHaveLength(1);
-			// console.log(LoginTest2[0].username);
-			expect(LoginTest2[0].username).toMatch("loginTestUsername");
+			expect(LoginTest2[0].username).toMatch("Captain Marvel");
 
 			// step 3 login a user
 			let res = await request(server).post("/api/auth/login").send({
-				username: "loginTestUsername",
-				password: "loginTestPassword",
+				username: "Captain Marvel",
+				password: "foobar",
 			});
-
-			// step 3 check the user login was successful in returning a token
-			// console.log(res.body.token);
-
-			////// extra truncate - don't know why but users added through tests seem to be sticking around for some reason
-			await db("users").truncate();
+      expect(res.body.message).toMatch(/welcome, Captain Marvel/i)
+    }, 500);
 		});
 	}); // PASSING
-});
